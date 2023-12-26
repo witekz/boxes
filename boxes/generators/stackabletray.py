@@ -23,17 +23,11 @@ class BinFrontEdge(edges.BaseEdge):
         a1 = math.degrees(math.atan(f/(1-f)))
         a2 = 45 + a1
         self.corner(-a1)
-        l = self.settings.y
+        # l = self.settings.y
+        l = length
         self.edges["e"](l* (f**2+(1-f)**2)**0.5)
         self.corner(a2)            
         self.edges["f"](l*f*2**0.5)
-        # if i < len(self.settings.sy)-1:
-        #     if self.char == "B":
-        #         self.polyline(0, 45, 0.5*self.settings.hi,
-        #                         -90, self.thickness, -90, 0.5*self.settings.hi, 90-a1)
-        #     else:
-        #         self.polyline(0, -45, self.thickness, -a1)
-        # else:
         self.corner(-45)
 
     def margin(self) -> float:
@@ -49,7 +43,7 @@ class StackableTray(Boxes):
 
     def __init__(self) -> None:
         Boxes.__init__(self)
-        # self.addSettingsArgs(edges.StackableSettings)
+        self.addSettingsArgs(edges.StackableSettings)
         self.buildArgParser("sx", "y", "h", "outside")
         self.addSettingsArgs(edges.FingerJointSettings, surroundingspaces=0.5)
         self.argparser.add_argument(
@@ -61,6 +55,7 @@ class StackableTray(Boxes):
         posy = -0.5 * self.thickness
         # for y in self.sy[:-1]:
         posy += self.y + self.thickness
+        posy = self.bottom_offset
         posx = 0
         for x in self.sx:
             self.fingerHolesAt(posy, posx, x)
@@ -68,10 +63,10 @@ class StackableTray(Boxes):
     
     def xSlots(self):
         posx = -0.5 * self.thickness
+        posy = self.bottom_offset
         for x in self.sx[:-1]:
-            posx += x + self.thickness
-            posy = 0
-            self.fingerHolesAt(posx, posy, self.y)
+            posx += x + self.thickness            
+            self.fingerHolesAt(posx, posy, self.yi)
         
 
     def xHoles(self):
@@ -89,8 +84,7 @@ class StackableTray(Boxes):
         return CB
 
     def yHoles(self):
-        posy = -0.5 * self.thickness
-        posy += self.y + self.thickness
+        posy = self.bottom_offset
         self.fingerHolesAt(posy, 0, self.hi)
 
     def render(self):
@@ -101,9 +95,14 @@ class StackableTray(Boxes):
 
         x = sum(self.sx) + self.thickness * (len(self.sx) - 1)
         y = self.y
+
+        # bottom_edge = "š" if self.stackable else "e"
+        # top_edge = "S" if self.stackable else "e"
+        self.bottom_offset =  0.5 * self.thickness + self.edges["š"].settings.holedistance
             
         h = self.h
         hi = self.hi = h
+        yi = self.yi = y - self.bottom_offset
         t = self.thickness
         self.front = min(self.front, 0.999)
 
@@ -118,18 +117,19 @@ class StackableTray(Boxes):
         e = ["F", "f", edges.SlottedEdge(self, self.sx[::-1], "G"), "f"]
 
         self.rectangularWall(x, h, e, callback=[self.xHoles],  move="right", label="bottom")
-        self.rectangularWall(y, h, "FFbF", move="up", label="left")
-        self.rectangularWall(y, h, "FFbF", label="right")
-        self.rectangularWall(x, h, "Ffef", callback=[self.xHoles, ], move="left", label="top")
+        self.rectangularWall(y, h, "FSbš", callback=[self.yHoles], move="up", label="left")
+        self.rectangularWall(y, h, "FSbš", callback=[self.yHoles], label="right")
+             
+        self.rectangularWall(x, y, "šfSf", callback=[self.xSlots, self.ySlots], move="left", label="back")
         self.rectangularWall(y, h, "FFBF", move="up only")
-
-        # floor
-        self.rectangularWall(x, y, "ffff", callback=[self.xSlots], move="right", label="back")
-        # Inner walls
-        for i in range(len(self.sx) - 1):
-            e = [edges.SlottedEdge(self, [self.y], "f"), "f", "B", "f"]
-            self.rectangularWall(y, hi, e, move="up", label="inner vertical " + str(i+1))
-
-        # Front walls    
+        # front wall
         e = [edges.SlottedEdge(self, self.sx, "g"), "F", "e", "F"]
         self.rectangularWall(x, y*self.front*2**0.5, e, callback=[self.frontHoles(0)], move="up", label="retainer")
+
+   
+        # Inner walls
+        for i in range(len(self.sx) - 1):
+            e = [edges.SlottedEdge(self, [yi], "f"), "e", "B", "f"]            
+            self.rectangularWall(yi, hi, e, move="up", label="inner vertical " + str(i+1))
+
+        
