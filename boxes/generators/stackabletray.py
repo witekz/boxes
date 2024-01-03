@@ -37,14 +37,14 @@ class BinFrontSideEdge(BinFrontEdge):
     char = 'b'
 
 class StackableTray(Boxes):
-    """A Type tray variant to be used up right with sloped walls in front"""
+    """A stackable type tray variant with sloped walls in front"""
 
     ui_group = "Shelf"
 
     def __init__(self) -> None:
         Boxes.__init__(self)
         self.addSettingsArgs(edges.StackableSettings)
-        self.buildArgParser("sx", "y", "h", "outside")
+        self.buildArgParser("sx", "y", "h", "hi", "outside")
         self.addSettingsArgs(edges.FingerJointSettings, surroundingspaces=0.5)
         self.argparser.add_argument(
             "--front", action="store", type=float, default=0.4,
@@ -80,7 +80,7 @@ class StackableTray(Boxes):
             posx = -0.5 * self.thickness
             for x in self.sx[:-1]:
                 posx += x + self.thickness
-                self.fingerHolesAt(posx, 0, self.y*self.front*2**0.5)
+                self.fingerHolesAt(posx, 0, self.yi*self.front*2**0.5)
         return CB
 
     def yHoles(self):
@@ -101,8 +101,13 @@ class StackableTray(Boxes):
         self.bottom_offset =  0.5 * self.thickness + self.edges["š"].settings.holedistance
             
         h = self.h
+        if self.hi:
+            yi = self.yi = self.hi - self.bottom_offset
+        else:
+            yi = self.yi = y - self.bottom_offset
+
         hi = self.hi = h
-        yi = self.yi = y - self.bottom_offset
+        
         t = self.thickness
         self.front = min(self.front, 0.999)
 
