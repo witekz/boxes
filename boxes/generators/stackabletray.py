@@ -24,11 +24,12 @@ class BinFrontEdge(edges.BaseEdge):
         a2 = 45 + a1
         self.corner(-a1)
         # l = self.settings.y
-        l = length
+        l = length - self.bottom_offset
         self.edges["e"](l* (f**2+(1-f)**2)**0.5)
         self.corner(a2)            
         self.edges["f"](l*f*2**0.5)
         self.corner(-45)
+        self.edges["e"](self.bottom_offset)
 
     def margin(self) -> float:
         return self.settings.y * self.settings.front
@@ -51,17 +52,13 @@ class StackableTray(Boxes):
             help="fraction of bin height covered with slope")
 
 
-    def ySlots(self):
-        posy = -0.5 * self.thickness
-        # for y in self.sy[:-1]:
-        posy += self.y + self.thickness
-        posy = self.bottom_offset
+    def bottomHolesBack(self):
+        posy = self.bottom_offset - 0.5 * self.thickness
         posx = 0
-        for x in self.sx:
-            self.fingerHolesAt(posy, posx, x)
-            posx += x + self.thickness
+        self.fingerHolesAt(posy, posx, self.bottom_width)
+
     
-    def xSlots(self):
+    def innerHolesBack(self):
         posx = -0.5 * self.thickness
         posy = self.bottom_offset
         for x in self.sx[:-1]:
@@ -84,7 +81,7 @@ class StackableTray(Boxes):
         return CB
 
     def yHoles(self):
-        posy = self.bottom_offset
+        posy = self.bottom_offset - 0.5 * self.thickness
         self.fingerHolesAt(posy, 0, self.hi)
 
     def render(self):
@@ -94,11 +91,12 @@ class StackableTray(Boxes):
             self.h = self.adjustSize(self.h, e2=False)
 
         x = sum(self.sx) + self.thickness * (len(self.sx) - 1)
+        self.bottom_width = x
         y = self.y
 
         # bottom_edge = "š" if self.stackable else "e"
         # top_edge = "S" if self.stackable else "e"
-        self.bottom_offset =  0.5 * self.thickness + self.edges["š"].settings.holedistance
+        self.bottom_offset =  2 * self.thickness
             
         h = self.h
         if self.hi:
@@ -119,13 +117,13 @@ class StackableTray(Boxes):
         angledsettings.edgeObjects(self, chars="gGH")
 
         # outer walls
-        e = ["F", "f", edges.SlottedEdge(self, self.sx[::-1], "G"), "f"]
+        e = ["f", "f", edges.SlottedEdge(self, self.sx[::-1], "G"), "f"]
 
-        self.rectangularWall(x, h, e, callback=[self.xHoles],  move="right", label="bottom")
+        self.rectangularWall(self.bottom_width, h, e, callback=[self.xHoles],  move="right", label="bottom")
         self.rectangularWall(y, h, "FSbš", callback=[self.yHoles], move="up", label="left")
         self.rectangularWall(y, h, "FSbš", callback=[self.yHoles], label="right")
              
-        self.rectangularWall(x, y, "šfSf", callback=[self.xSlots, self.ySlots], move="left", label="back")
+        self.rectangularWall(x, y, "šfSf", callback=[self.innerHolesBack, self.bottomHolesBack], move="left", label="back")
         self.rectangularWall(y, h, "FFBF", move="up only")
         # front wall
         e = [edges.SlottedEdge(self, self.sx, "g"), "F", "e", "F"]
