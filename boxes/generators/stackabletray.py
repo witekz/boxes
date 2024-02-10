@@ -23,7 +23,6 @@ class BinFrontEdge(edges.BaseEdge):
         a1 = math.degrees(math.atan(f/(1-f)))
         a2 = 45 + a1
         self.corner(-a1)
-        # l = self.settings.y
         l = length - self.bottom_offset
         self.edges["e"](l* (f**2+(1-f)**2)**0.5)
         self.corner(a2)            
@@ -33,9 +32,21 @@ class BinFrontEdge(edges.BaseEdge):
 
     def margin(self) -> float:
         return self.settings.y * self.settings.front
+        
 
-class BinFrontSideEdge(BinFrontEdge):
+class BinFrontInnerEdge(BinFrontEdge):
     char = 'b'
+
+    def __call__(self, length, **kw):
+        f = self.settings.front
+        a1 = math.degrees(math.atan(f/(1-f)))
+        a2 = 45 + a1
+        self.corner(-a1)
+        l = length
+        self.edges["e"](l* (f**2+(1-f)**2)**0.5)
+        self.corner(a2)            
+        self.edges["f"](l*f*2**0.5)
+        self.corner(-45)
 
 class StackableTray(Boxes):
     """A stackable type tray variant with sloped walls in front"""
@@ -110,7 +121,7 @@ class StackableTray(Boxes):
         self.front = min(self.front, 0.999)
 
         self.addPart(BinFrontEdge(self, self))
-        self.addPart(BinFrontSideEdge(self, self))
+        self.addPart(BinFrontInnerEdge(self, self))
 
         angledsettings = copy.deepcopy(self.edges["f"].settings)
         angledsettings.setValues(self.thickness, True, angle=45)
@@ -120,8 +131,8 @@ class StackableTray(Boxes):
         e = ["f", "f", edges.SlottedEdge(self, self.sx[::-1], "G"), "f"]
 
         self.rectangularWall(self.bottom_width, h, e, callback=[self.xHoles],  move="right", label="bottom")
-        self.rectangularWall(y, h, "FSbš", callback=[self.yHoles], move="up", label="left")
-        self.rectangularWall(y, h, "FSbš", callback=[self.yHoles], label="right")
+        self.rectangularWall(y, h, "FSBš", callback=[self.yHoles], move="up", label="left")
+        self.rectangularWall(y, h, "FSBš", callback=[self.yHoles], label="right")
              
         self.rectangularWall(x, y, "šfSf", callback=[self.innerHolesBack, self.bottomHolesBack], move="left", label="back")
         self.rectangularWall(y, h, "FFBF", move="up only")
@@ -132,7 +143,7 @@ class StackableTray(Boxes):
    
         # Inner walls
         for i in range(len(self.sx) - 1):
-            e = [edges.SlottedEdge(self, [yi], "f"), "e", "B", "f"]            
+            e = [edges.SlottedEdge(self, [yi], "f"), "e", "b", "f"]            
             self.rectangularWall(yi, hi, e, move="up", label="inner vertical " + str(i+1))
 
         
