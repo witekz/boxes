@@ -18,17 +18,22 @@ from boxes import *
 
 class BinFrontEdge(edges.BaseEdge):
     char = "B"
+
+    def length(self, length):
+        return length-self.bottom_offset
+
     def __call__(self, length, **kw):
         f = self.settings.front
         a1 = math.degrees(math.atan(f/(1-f)))
         a2 = 45 + a1
         self.corner(-a1)
-        l = length - self.bottom_offset
+        l = self.length(length)
         self.edges["e"](l* (f**2+(1-f)**2)**0.5)
         self.corner(a2)            
         self.edges["f"](l*f*2**0.5)
         self.corner(-45)
-        self.edges["e"](self.bottom_offset)
+        if l<length:
+            self.edges["e"](length-l)
 
     def margin(self) -> float:
         return self.settings.y * self.settings.front
@@ -37,16 +42,8 @@ class BinFrontEdge(edges.BaseEdge):
 class BinFrontInnerEdge(BinFrontEdge):
     char = 'b'
 
-    def __call__(self, length, **kw):
-        f = self.settings.front
-        a1 = math.degrees(math.atan(f/(1-f)))
-        a2 = 45 + a1
-        self.corner(-a1)
-        l = length
-        self.edges["e"](l* (f**2+(1-f)**2)**0.5)
-        self.corner(a2)            
-        self.edges["f"](l*f*2**0.5)
-        self.corner(-45)
+    def length(self, length):
+        return length
 
 class StackableTray(Boxes):
     """A stackable type tray variant with sloped walls in front"""
